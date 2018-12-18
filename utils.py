@@ -1,7 +1,7 @@
 import math
 
-def calc_progress(blockheight, next_event):
-    return math.floor( ( blockheight / next_event ) * 100 )
+def calc_progress(blockheight, next_event, n_blocks_to_halve):
+    return ( (next_event - blockheight) / n_blocks_to_halve )
 
 def get_block_height_from_last_event(current_block_height, n_blocks_to_halve):
     # determine the block height of the last halving event

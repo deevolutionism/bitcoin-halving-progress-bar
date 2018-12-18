@@ -3,3 +3,6 @@ N_BLOCKS_TO_HALVE = 210000
 
 # For now, depend on blockchain.info for getting latest block height
 GET_BLOCK_HEIGHT = "https://blockchain.info/q/getblockcount"
+
+# initial btc mining reward
+INIT_MINING_REWARD = 50
