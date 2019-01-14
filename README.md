@@ -24,3 +24,10 @@ Reward: 6.5 BTC
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ ████████▓▒░░░░░░░░░░ 48% ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# setup
+start a virtual environment
+`venv`
+set environemnt variables for twitter api access
+
+

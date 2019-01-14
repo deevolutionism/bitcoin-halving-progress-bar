@@ -15,3 +15,6 @@ def get_block_height_from_last_event(current_block_height, n_blocks_to_halve):
 def calc_reward_era(current_block_height, n_block_to_halve):
     # calcualte the reward era we are currently in. + 1 to account for the 0th block reward
     return math.floor((current_block_height / n_block_to_halve) + 1)
+
+def calc_block_reward(reward_era):
+    max_decimals = 
