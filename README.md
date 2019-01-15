@@ -20,10 +20,12 @@ example output
 
 
 Reward Era: 3
-Reward: 6.5 BTC
+⛏ Reward: 6.5 BTC
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ ████████▓▒░░░░░░░░░░ 48% ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+▩▩▩▩▩▢▢▢▢▢▢▢
 
 # setup
 start the virtual environment
@@ -39,7 +41,7 @@ zip dependencies
 add function to zip
 `zip -g function.zip service.py`
 
-update lamba function
+update lamba function via aws-cli
 `aws lambda update-function-code --function-name updateBitcoinProgressTwitterBot --zip-file fileb://function.zip`
 
 

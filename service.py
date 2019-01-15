@@ -107,7 +107,7 @@ def update_status(status):
 def get_tweets():
     return
 
-def run(event, context):
+def run(event="", context="", publish=True):
     # get the current block height from blockchain.info
     CURRENT_BLOCK_HEIGHT = get_block_height()
     # determine which blockheight the last halving event occured
@@ -138,13 +138,16 @@ def run(event, context):
         status
     ])
     print(status)
-    body = { "message": status }
+    if publish == True:
+        body = { "message": update_status(status) }
+        pass
+    else:
+        body = { "message": status }
+        pass
+
     response = {
         "statusCode": 200,
         "body": json.dumps(body)
     }
-    
+
     return response
-
-
-print(run('event', 'context'))
