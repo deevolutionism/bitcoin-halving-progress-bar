@@ -12,6 +12,7 @@
 # this twitter bot can finally rest once we have reached the 34th reward era.
 # publish a tweet everytime progress has increased by a full percentage
 import os
+import json
 import math
 import requests
 import tweepy
@@ -36,7 +37,7 @@ api = tweepy.API(t_auth)
 
 def calc_progress(blockheight, next_event, n_blocks_to_halve):
     # return value between 0 - 1
-    return ( (next_event - blockheight) / n_blocks_to_halve )
+    return ( 1 - (next_event - blockheight) / n_blocks_to_halve )
 
 def get_block_height_from_last_event(current_block_height, n_blocks_to_halve):
     # determine the block height of the last halving event
@@ -63,14 +64,16 @@ def get_block_height():
     return int(r.text)
 
 def gen_progress_string(progress):
+    # progress: type: float 0.0 - 1.0
     # ░
     # ▒
     # ▓
     # █
     # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    # ┃ ████████▓░░░░░░░░░░░ 48% ┃
+    # ┃ ████████░░░░░░░░░░░ 48%  ┃
     # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
     # 20 * progress
+    # ▓░░░░░░░░░░░░░░
     bar_length = 15
     c = bar_length * progress
     p = math.floor(c)
@@ -79,17 +82,18 @@ def gen_progress_string(progress):
     bar = map(lambda x:'█', range(p))
     bar = ''.join(bar)
 
-    if 0 < f and f < 1:
-        bar = bar + "░"
-        pass
-    elif 1 <= f and f < 2.5:
-        bar = bar + "▒"
-        pass
-    elif 2.5 <= f and f < 4:
-        bar = bar + "▓"
-        pass
+    # if 0 < f and f < 1:
+    #     bar = bar + "░"
+    #     pass
+    # elif 1 <= f and f < 2.5:
+    #     bar = bar + "▒"
+    #     pass
+    # elif 2.5 <= f and f < 4:
+    #     bar = bar + "▓"
+    #     pass
 
-    bar = bar + ''.join( map( lambda x:'░', range(bar_length - p - 1) ) )
+    bar_empty = ''.join( map( lambda x:'░', range(bar_length - p) ) )
+    bar = ''.join( [bar, bar_empty] )
     progress_string = str(math.floor(progress * 100))
     bar = ''.join([ bar, " ", progress_string, "%" ])
 
@@ -103,7 +107,7 @@ def update_status(status):
 def get_tweets():
     return
 
-def run():
+def run(event, context):
     # get the current block height from blockchain.info
     CURRENT_BLOCK_HEIGHT = get_block_height()
     # determine which blockheight the last halving event occured
@@ -134,13 +138,13 @@ def run():
         status
     ])
     print(status)
-    update_status(status)
+    body = { "message": status }
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(body)
+    }
+    
+    return response
 
 
-def test_api():
-    user = api.me()
-    print(user.name)
-
-
-test_api()
-run()
+print(run('event', 'context'))

@@ -26,8 +26,20 @@ Reward: 6.5 BTC
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 # setup
-start a virtual environment
-`venv`
+start the virtual environment
+`source ./bin/activate`
 set environemnt variables for twitter api access
+
+# deploy to aws lambda
+zip dependencies
+`cd package`
+`zip -r9 ../function.zip .`
+`cd ../`
+
+add function to zip
+`zip -g function.zip service.py`
+
+update lamba function
+`aws lambda update-function-code --function-name updateBitcoinProgressTwitterBot --zip-file fileb://function.zip`
 
 
