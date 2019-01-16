@@ -16,6 +16,10 @@ import json
 import math
 import requests
 import tweepy
+import boto3
+
+# AWS SSM
+client = boto3.client('ssm')
 
 # keys
 access_token = os.environ['twitter_access_token']
@@ -137,12 +141,31 @@ def run(event="", context="", publish=True):
         'Blocks Left: ', str(BLOCKS_LEFT), '\n',
         status
     ])
-    print(status)
-    if publish == True:
-        body = { "message": update_status(status) }
+
+
+    # get the previously computed value from storage
+    ssm_tagValue = int(PROGRESS * 100)
+    ssm_get_response = client.get_parameter(
+        Name='/BitcoinProgress/lastKnownPercentage',
+        WithDecryption=False
+    )
+    # check if the newly computed value is different from the previous
+    diff = ssm_get_response['Parameter']['Value'].find(str(ssm_tagValue))
+    print('diff', diff)
+    if publish == True and diff == -1:
+        # update the value
+        ssm_response = client.put_parameter(
+            Name='/BitcoinProgress/lastKnownPercentage',
+            Description='',
+            Value=str(ssm_tagValue),
+            Type='String',
+            Overwrite=True
+        )
+        # publish
+        body = { "message": update_status(status), "tagValue": ssm_tagValue, "published": True }
         pass
     else:
-        body = { "message": status }
+        body = { "message": status, "tagValue": ssm_tagValue, "published": False }
         pass
 
     response = {
@@ -150,4 +173,5 @@ def run(event="", context="", publish=True):
         "body": json.dumps(body)
     }
 
+    print(status)
     return response

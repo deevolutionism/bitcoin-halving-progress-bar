@@ -43,5 +43,6 @@ add function to zip
 
 update lamba function via aws-cli
 `aws lambda update-function-code --function-name updateBitcoinProgressTwitterBot --zip-file fileb://function.zip`
+or run the update script: `./update.sh`
 
 

@@ -1,5 +1,7 @@
 import unittest
 import service
+import tweepy
+import json
 
 class test_bar_output(unittest.TestCase):
     def test(self):
@@ -12,4 +14,7 @@ def test_api():
 
 # 200 - 300 n = 250 % of n = ?
 
-service.run(publish=False)
+response = service.run(publish=False)
+print(response)
+
+# timeline = service.api.user_timeline()
