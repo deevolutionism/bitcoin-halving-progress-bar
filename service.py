@@ -11,12 +11,36 @@
 # if progress > 100, update last_event, update next_event
 # this twitter bot can finally rest once we have reached the 34th reward era.
 # publish a tweet everytime progress has increased by a full percentage
+# at 100%, publish something exciting!
 import os
 import json
 import math
 import requests
 import tweepy
 import boto3
+
+from SubsidyCalc import SubsidyCalculator
+from TweetComposer import Tweet
+from TweetComposer import TwitterHandler
+from SSMManager import SSM
+from ProgressBar import ProgressBar
+
+
+#check ssm tag value
+# calculate progress
+# if ssm tag value is different:
+# update ssm value
+# publish tweet
+
+def start(event, context):
+
+    subsidy = SubsidyCalculator(
+        event['INIT_MINING_SUBSIDY'], 
+        event['HALVING_INTERVAL'],
+        event['CURRENT_BLOCK_HEIGHT']
+    )
+    ssm = SSM(event['SSM_PATH'])
+    ssm_val = ssm.check_ssm_value()
 
 # AWS SSM
 client = boto3.client('ssm')
@@ -27,17 +51,64 @@ access_token_secret = os.environ['twitter_access_token_secret']
 consumer_key = os.environ['twitter_consumer_key']
 consumer_secret = os.environ['twitter_consumer_secret']
 # BTC defined constant: n blocks bewteen halving events
-N_BLOCKS_TO_HALVE = 210000
+HALVING_INTERVAL = 210000
 
 # For now, depend on blockchain.info for getting latest block height
 GET_BLOCK_HEIGHT = "https://blockchain.info/q/getblockcount"
 
-# initial btc mining reward
-INIT_MINING_REWARD = 50
+def get_block_height(uri):
+    r = requests.get(uri)
+    return int(r.text())
+
+# initial btc mining subsidy
+
 
 t_auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 t_auth.set_access_token(access_token, access_token_secret)
 api = tweepy.API(t_auth)
+
+
+class TwitterHandler():
+    def __init__(self, access_token, access_token_secret, consumer_key, consumer_secret, ssm_tag):
+        self.access_token = os.environ[access_token]
+        self.access_token_secret = os.environ[access_token_secret]
+        self.consumer_key = os.environ[consumer_key]
+        self.consumer_secret = os.environ[consumer_secret]
+
+    def publishTweet(content):
+        ssm_tagValue = int(PROGRESS * 100)
+        ssm_get_response = client.get_parameter(
+            Name='/BitcoinProgress/lastKnownPercentage',
+            WithDecryption=False
+        )
+        # check if the newly computed value is different from the previous
+        diff = ssm_get_response['Parameter']['Value'].find(str(ssm_tagValue))
+        print('diff', diff)
+        if publish == True and diff == -1:
+            # update the value
+            ssm_response = client.put_parameter(
+                Name='/BitcoinProgress/lastKnownPercentage',
+                Description='',
+                Value=str(ssm_tagValue),
+                Type='String',
+                Overwrite=True
+            )
+            # publish
+            body = { "message": update_status(status), "tagValue": ssm_tagValue, "published": True }
+            pass
+        else:
+            body = { "message": status, "tagValue": ssm_tagValue, "published": False }
+            pass
+
+        response = {
+            "statusCode": 200,
+            "body": json.dumps(body)
+        }
+
+        print(status)
+        return response
+
+        
 
 def calc_progress(blockheight, next_event, n_blocks_to_halve):
     # return value between 0 - 1
@@ -66,18 +137,11 @@ def calc_block_reward(reward_era):
 def get_block_height():
     r = requests.get(GET_BLOCK_HEIGHT)
     return int(r.text)
+    
+def calc_inflation():
+    return null
 
 def gen_progress_string(progress):
-    # progress: type: float 0.0 - 1.0
-    # ░
-    # ▒
-    # ▓
-    # █
-    # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    # ┃ ████████░░░░░░░░░░░ 48%  ┃
-    # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-    # 20 * progress
-    # ▓░░░░░░░░░░░░░░
     bar_length = 15
     c = bar_length * progress
     p = math.floor(c)
@@ -85,16 +149,6 @@ def gen_progress_string(progress):
 
     bar = map(lambda x:'█', range(p))
     bar = ''.join(bar)
-
-    # if 0 < f and f < 1:
-    #     bar = bar + "░"
-    #     pass
-    # elif 1 <= f and f < 2.5:
-    #     bar = bar + "▒"
-    #     pass
-    # elif 2.5 <= f and f < 4:
-    #     bar = bar + "▓"
-    #     pass
 
     bar_empty = ''.join( map( lambda x:'░', range(bar_length - p) ) )
     bar = ''.join( [bar, bar_empty] )
@@ -134,12 +188,12 @@ def run(event="", context="", publish=True):
     print('progress: ', PROGRESS * 100)
     print('block reward: ', BLOCK_REWARD, 'BTC')
     print('remaining blocks: ', BLOCKS_LEFT)
-    status = gen_progress_string(PROGRESS)
+    status_bar = gen_progress_string(PROGRESS)
     status = "".join([
-        'Reward Era: ', str(REWARD_ERA), '\n',
-        'Block Reward: ', str(BLOCK_REWARD), '\n',
-        'Blocks Left: ', str(BLOCKS_LEFT), '\n',
-        status
+        'Subsidy Era: ', str(REWARD_ERA), '/34\n',
+        'Block Subsidy: ₿', str(BLOCK_REWARD), '\n',
+        'Blocks Remaining: ', str(BLOCKS_LEFT), '\n',
+        status_bar
     ])
 
 
