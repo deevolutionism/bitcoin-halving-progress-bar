@@ -1,3 +1,2 @@
-#!/bin/bash
-zip -g functions.zip service.py
-aws lambda update-function-code --function-name updateBitcoinProgressTwitterBot --zip-file fileb://function.zip
+7z a 
+aws lambda update-function-code --function-name testFunction --zip-file fileb://function.zip
