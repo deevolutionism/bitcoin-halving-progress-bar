@@ -140,3 +140,27 @@ class Tweet():
             self.PROGRESS_BAR
         ])
         return status
+
+def run(event="", context="", publish=True):
+    # input event parameter of the backend Lambda function as follows:
+    # {
+    #     "resource": "Resource path",
+    #     "path": "Path parameter",
+    #     "httpMethod": "Incoming request's method name"
+    #     "headers": {Incoming request headers}
+    #     "queryStringParameters": {query string parameters }
+    #     "pathParameters":  {path parameters}
+    #     "stageVariables": {Applicable stage variables}
+    #     "requestContext": {Request context, including authorizer-returned key-value pairs}
+    #     "body": "A JSON string of the request payload."
+    #     "isBase64Encoded": "A boolean flag to indicate if the applicable request payload is Base64-encode"
+    # }
+
+
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(event['body'])
+    }
+
+    print(status)
+    return response
