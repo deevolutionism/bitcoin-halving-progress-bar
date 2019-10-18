@@ -51,12 +51,6 @@ class TestSubsidyCalc(unittest.TestCase):
         subsidy = init_subsidy
         supply = 0
         max_supply = 2099999997690000
-        # print('block height', ':', 'subsidy era', ':', 'subsidy (sats)', ':', 'total supply (sats)')
-        # for i in range(1,34):
-        #     supply = supply + subsidy * HALVING_INTERVAL
-        #     print('|', HALVING_INTERVAL * i, '|', i, '|', subsidy, '|', supply)
-        #     subsidy = init_subsidy >> i
-        #     i = i + 1
         result = calc.block_subsidy()
         print(result)
         self.assertEqual(result, 50*COIN)
@@ -67,6 +61,12 @@ class TestProgressBar(unittest.TestCase):
         progressBar = ProgressBar(percent_complete=100)
         result = progressBar.gen_progress_string()
         self.assertEqual(result, '███████████████ 100%')
+
+    def test_progress_bar_99(self):
+        progressBar = ProgressBar(percent_complete=99)
+        result = progressBar.gen_progress_string()
+
+        self.assertEqual(result, '██████████████░ 99%')
     
     def test_progress_bar_0(self):
         progressBar = ProgressBar(percent_complete=0)

@@ -37,7 +37,11 @@ class SSM():
         )
 
 class ProgressBar():
-    """Create a progess bar"""
+    """
+    Create a progess bar that looks like this:
+
+    █████████░░░░░
+    """
     def __init__(self, percent_complete):
         self.percent_complete = percent_complete
 
@@ -48,8 +52,8 @@ class ProgressBar():
         bar = map(lambda x:'█', range(p))
         bar = ''.join(bar)
 
-        bar_empty = ''.join( map( lambda x:'░', range(bar_length - p) ) )
-        bar = ''.join( [bar, bar_empty] )
+        bar_incomplete = ''.join( map( lambda x:'░', range(bar_length - p) ) )
+        bar = ''.join( [bar, bar_incomplete] )
         progress_string = str(math.floor(self.percent_complete))
         bar = ''.join([ bar, " ", progress_string, "%" ])
         return bar
@@ -62,12 +66,13 @@ class SubsidyCalculator():
     """
     Calculate the subsidy reward, reward era, 
     percentage completed until next halving, and other stats
-    given some required constants
-    such as the inital minind subsidy amount,
-    the halving interval ( number of block between halvings),
-    current block height, and the number of coins that make up a bitcoin
+    given required constants and varaiables:
+        CURRENT_BLOCK_HEIGHT: the most recent height of the bitcoin blockchain
+        INIT_MINING_SUBSIDY: the initial mining subsidy. In bitcoins case, it is 50
+        HALVING_INTERVAL: number of blocks between subsidy halvings. bitcoin default is every 210,000 block
+        COIN: the total number of coins in a unit of bitcoin. Default is 100,000,000
     """
-    def __init__(self, CURRENT_BLOCK_HEIGHT, INIT_MINING_SUBSIDY, HALVING_INTERVAL, COIN):
+    def __init__(self, CURRENT_BLOCK_HEIGHT=0, INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, COIN=100000000):
         self.INIT_MINING_SUBSIDY = INIT_MINING_SUBSIDY * COIN
         self.HALVING_INTERVAL = HALVING_INTERVAL
         self.CURRENT_BLOCK_HEIGHT = CURRENT_BLOCK_HEIGHT
@@ -91,6 +96,7 @@ class SubsidyCalculator():
 
     def block_subsidy(self):
         subsidy_era = self.subsidy_era()
+        # use a bitwise right shift to halve the subsidy based on the era
         return self.INIT_MINING_SUBSIDY >> subsidy_era - 1
     
     def compose(self):
@@ -101,14 +107,6 @@ class SubsidyCalculator():
             'percent_complete': self.percent_complete()
         }
         return data
-
-
-INIT_MINING_SUBSIDY = 50
-COIN = 100000000
-HALVING_INTERVAL = 210000
-CURRENT_BLOCK_HEIGHT = 1
-calc = SubsidyCalculator(INIT_MINING_SUBSIDY=INIT_MINING_SUBSIDY, HALVING_INTERVAL=HALVING_INTERVAL, CURRENT_BLOCK_HEIGHT=CURRENT_BLOCK_HEIGHT, COIN=COIN)
-print(calc.block_subsidy())
 
 
 class Tweeter():

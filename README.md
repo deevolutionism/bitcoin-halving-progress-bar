@@ -25,12 +25,11 @@ I schedule the lambda run every 10 minutes, which is the aproximate time it take
 The AWS Lambda functions are best used stateless. However, this function depends on knowning the last computed percentage. We can't store that in the lambda function itself, so one way of getting that percentage is to store the value using the AWS Systems Manager Parameter Store.
 more information about amazon SSM can be found [here](https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html).
 
-<<<<<<< HEAD
 An alternative solution that would make this module less dependant on AWS might be to use a regex to find the percentage from the latest tweet.
 
 
 ### Total Bitcoin Supply
-If you are curious to know the block subsidy amount for each subsidy era, I have generated a table in supply.md
+Check out the subsidy amount for each subsidy era. A csv file has been generated with the bitcoinHalvingSchedule.py script named bitcoin_subsidy_schedule.csv. There is also a markdown supply.md file.
 
 | subsidy era | subsidy (sats) | total supply (sats) |
 |-------------|----------------|---------------------|
@@ -42,8 +41,6 @@ If you are curious to know the block subsidy amount for each subsidy era, I have
 |33           | 1              | 2099999997690000
 |34           | 0              | 2099999997690000
 
-=======
->>>>>>> 5b6f0b8ccac7e0e139574a4728f9125699b24d13
 
 # setup
 start the python virtual environment
