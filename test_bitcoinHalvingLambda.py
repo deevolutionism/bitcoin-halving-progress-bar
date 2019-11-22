@@ -33,11 +33,7 @@ class TestSubsidyCalc(unittest.TestCase):
         self.assertEqual(calc.block_height_of_next_halving(), 210000)
 
     def test_percent_complete(self):
-        INIT_MINING_SUBSIDY = 50
-        COIN = 100000000
-        HALVING_INTERVAL = 210000
-        CURRENT_BLOCK_HEIGHT = 210000
-        calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, CURRENT_BLOCK_HEIGHT=210000, COIN=100000000)
+        calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, CURRENT_BLOCK_HEIGHT=110000, COIN=100000000)
         self.assertEqual(calc.percent_complete(), 100.0)
 
     def test_block_subsidy(self):
@@ -54,6 +50,72 @@ class TestSubsidyCalc(unittest.TestCase):
         result = calc.block_subsidy()
         print(result)
         self.assertEqual(result, 50*COIN)
+    
+    def test_block_subsidy_450000(self):
+        INIT_MINING_SUBSIDY = 50
+        COIN = 100000000
+        HALVING_INTERVAL = 210000
+        CURRENT_BLOCK_HEIGHT = 210001
+        calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, CURRENT_BLOCK_HEIGHT=210001, COIN=100000000)
+        init_subsidy = INIT_MINING_SUBSIDY * COIN
+        subsidy = init_subsidy
+        supply = 0
+        max_supply = 2099999997690000
+        result = calc.block_subsidy()
+        print(result)
+        self.assertEqual(result, 25*COIN)
+    
+    def test_block_subsidy_all(self):
+        INIT_MINING_SUBSIDY = 50
+        COIN = 100000000
+        HALVING_INTERVAL = 210000
+        CURRENT_BLOCK_HEIGHT = 1
+        calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, CURRENT_BLOCK_HEIGHT=1, COIN=100000000)
+        subsidy = []
+        expected_subsidy = [
+            5000000000,
+            2500000000,
+            1250000000,
+            625000000,
+            312500000,
+            156250000,
+            78125000,
+            39062500,
+            19531250,
+            9765625,
+            4882812,
+            2441406,
+            1220703,
+            610351,
+            305175,
+            152587,
+            76293,
+            38146,
+            19073,
+            9536,
+            4768,
+            2384,
+            1192,
+            596,
+            298,
+            149,
+            74,
+            37,
+            18,
+            9,
+            4,
+            2,
+            1
+        ]
+
+        for x in range(1,34):
+            sub = calc.block_subsidy()
+            print(calc.CURRENT_BLOCK_HEIGHT, sub, calc.subsidy_era())
+            subsidy.append(sub)
+            calc.CURRENT_BLOCK_HEIGHT = HALVING_INTERVAL * (x+1)
+        
+        self.assertListEqual(subsidy, expected_subsidy)
+            
 
 class TestProgressBar(unittest.TestCase):
     def test_progress_bar_100(self):

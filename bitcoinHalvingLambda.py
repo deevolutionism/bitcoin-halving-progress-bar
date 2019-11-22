@@ -7,6 +7,7 @@ import tweepy
 
 # AWS SSM
 client = boto3.client('ssm')
+
 # BTC defined constant: n blocks bewteen halving events
 N_BLOCKS_TO_HALVE = 210000
 
@@ -14,18 +15,18 @@ N_BLOCKS_TO_HALVE = 210000
 GET_BLOCK_HEIGHT = "https://blockchain.info/q/getblockcount"
 
 # initial btc mining reward
-INIT_MINING_REWARD = 50
+INIT_MINING_SUBSIDY = 50
 
 class SSM():
     def __init__(self, ssm_path):
         self.ssm_path = ssm_path
     
-    def check_ssm_value(self, value):
+    def check_ssm_value(self):
         ssm_response = client.get_parameter(
             Name=self.ssm_path,
             WithDecryption=False
         )
-        return ssm_response['Parameter']['Value'].find(str(value))
+        return ssm_response['Parameter']['Value']
 
     def update_ssm_value(self, value):
         ssm_response = client.put_parameter(
@@ -85,7 +86,6 @@ class SubsidyCalculator():
 
     def block_height_of_next_halving(self):
         era = self.subsidy_era() - 1
-        
         next_event_block_height = era * self.HALVING_INTERVAL + self.HALVING_INTERVAL
         return next_event_block_height
 
@@ -116,8 +116,10 @@ class Tweeter():
         self.consumer_key = os.environ[consumer_key]
         self.consumer_secret = os.environ[consumer_secret]
 
-    def publishTweet(content, ssm_tag_val):
-
+    def publishTweet(self, content, ssm_tag_val):
+        t_auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
+        t_auth.set_access_token(self.access_token, self.access_token_secret)
+        api = tweepy.API(t_auth)
         response = api.update_status(content)
 
         print(response)
@@ -139,26 +141,53 @@ class Tweet():
         ])
         return status
 
-def run(event="", context="", publish=True):
-    # input event parameter of the backend Lambda function as follows:
-    # {
-    #     "resource": "Resource path",
-    #     "path": "Path parameter",
-    #     "httpMethod": "Incoming request's method name"
-    #     "headers": {Incoming request headers}
-    #     "queryStringParameters": {query string parameters }
-    #     "pathParameters":  {path parameters}
-    #     "stageVariables": {Applicable stage variables}
-    #     "requestContext": {Request context, including authorizer-returned key-value pairs}
-    #     "body": "A JSON string of the request payload."
-    #     "isBase64Encoded": "A boolean flag to indicate if the applicable request payload is Base64-encode"
-    # }
+def run(event="", context="", publish=False):
+    """
+    input event parameter of the backend Lambda function as follows:
+    {
+        "resource": "Resource path",
+        "path": "Path parameter",
+        "httpMethod": "Incoming request's method name"
+        "headers": {Incoming request headers}
+        "queryStringParameters": {query string parameters }
+        "pathParameters":  {path parameters}
+        "stageVariables": {Applicable stage variables}
+        "requestContext": {Request context, including authorizer-returned key-value pairs}
+        "body": "A JSON string of the request payload."
+        "isBase64Encoded": "A boolean flag to indicate if the applicable request payload is Base64-encode"
+    }
+    """
+    CURRENT_BLOCK_HEIGHT = int(requests.get(GET_BLOCK_HEIGHT).text)
+    calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, CURRENT_BLOCK_HEIGHT=CURRENT_BLOCK_HEIGHT, COIN=100000000)
+    
+    # get the last computed value from storage
+    ssm = SSM(ssm_path="/BitcoinProgress/lastKnownPercentage")
+    prev_val = int(ssm.check_ssm_value())
+    curr_val = curr_val = int(calc.percent_complete())
+
+    SUBSIDY_ERA = calc.subsidy_era()
+    SUBSIDY_AMOUNT = calc.block_subsidy()
+    BLOCKS_REMAINING = calc.blocks_remaining_until_next_halving()
+    PROGRESS_BAR = ProgressBar(percent_complete=curr_val).gen_progress_string()
+    tweet = Tweet(SUBSIDY_ERA=SUBSIDY_ERA, SUBSIDY_AMOUNT=SUBSIDY_AMOUNT, BLOCKS_REMAINING=BLOCKS_REMAINING, PROGRESS_BAR=PROGRESS_BAR)
 
 
+    if prev_val < curr_val and publish == True:
+        access_token = os.environ['twitter_access_token']
+        access_token_secret = os.environ['twitter_access_token_secret']
+        consumer_key = os.environ['twitter_consumer_key']
+        consumer_secret = os.environ['twitter_consumer_secret']
+        tweeter = Tweeter(access_token=access_token, access_token_secret=access_token_secret, consumer_key=consumer_key, consumer_secret=consumer_secret)
+        message = tweet.compose()
+        tweeter.publishTweet(message)
+        body= { "message": message, "prev val": prev_val, "curr val": curr_val, "published": publish}
+    else:
+        body = { "message": "", "prev val": prev_val, "curr val": curr_val, "published": publish }
+    
     response = {
         "statusCode": 200,
-        "body": json.dumps(event['body'])
+        "body": json.dumps(body)
     }
 
-    print(status)
+    print(body)
     return response
