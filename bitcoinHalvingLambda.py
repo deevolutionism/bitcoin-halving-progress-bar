@@ -179,10 +179,12 @@ def run(event="", context="", publish=True):
         consumer_secret = os.environ['twitter_consumer_secret']
         tweeter = Tweeter(access_token=access_token, access_token_secret=access_token_secret, consumer_key=consumer_key, consumer_secret=consumer_secret)
         message = tweet.compose()
-        response = tweeter.publishTweet(message)
+        ssm.update_ssm_value(value=curr_val)
+        response = 'test'
+        #response = tweeter.publishTweet(message)
         body= { "message": message, "prev val": prev_val, "curr val": curr_val, "published": publish, "twitter api response": response }
     else:
-        body = { "message": "", "prev val": prev_val, "curr val": curr_val, "published": False }
+        body = { "message": "no update", "prev val": prev_val, "curr val": curr_val, "published": False }
     
     response = {
         "statusCode": 200,
