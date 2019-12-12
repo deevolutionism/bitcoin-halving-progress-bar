@@ -77,6 +77,7 @@ class SubsidyCalculator():
         self.INIT_MINING_SUBSIDY = INIT_MINING_SUBSIDY * COIN
         self.HALVING_INTERVAL = HALVING_INTERVAL
         self.CURRENT_BLOCK_HEIGHT = CURRENT_BLOCK_HEIGHT
+        self.COIN = COIN
 
     def subsidy_era(self):
         return math.ceil((self.CURRENT_BLOCK_HEIGHT / self.HALVING_INTERVAL))
@@ -97,7 +98,8 @@ class SubsidyCalculator():
     def block_subsidy(self):
         subsidy_era = self.subsidy_era()
         # use a bitwise right shift to halve the subsidy based on the era
-        return self.INIT_MINING_SUBSIDY >> subsidy_era - 1
+        subsidy = ( self.INIT_MINING_SUBSIDY >> subsidy_era - 1 ) / self.COIN
+        return subsidy
     
     def compose(self):
         data = {
@@ -135,7 +137,7 @@ class Tweet():
     def compose(self):
         status = "".join([
             'Subsidy Era: ', str(self.SUBSIDY_ERA), '/33\n',
-            'Block Subsidy: ', str(self.SUBSIDY_AMOUNT), 'BTC\n',
+            'Block Subsidy: ₿', str(self.SUBSIDY_AMOUNT), '\n',
             'Blocks Remaining: ', str(self.BLOCKS_REMAINING), '\n',
             self.PROGRESS_BAR
         ])
@@ -181,7 +183,7 @@ def run(event="", context="", publish=True):
         message = tweet.compose()
         ssm.update_ssm_value(value=curr_val)
         response = 'test'
-        #response = tweeter.publishTweet(message)
+        response = tweeter.publishTweet(message)
         body= { "message": message, "prev val": prev_val, "curr val": curr_val, "published": publish, "twitter api response": response }
     else:
         body = { "message": "no update", "prev val": prev_val, "curr val": curr_val, "published": False }
