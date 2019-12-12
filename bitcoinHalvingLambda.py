@@ -110,13 +110,13 @@ class SubsidyCalculator():
 
 
 class Tweeter():
-    def __init__(self, access_token, access_token_secret, consumer_key, consumer_secret, ssm_tag):
-        self.access_token = os.environ[access_token]
-        self.access_token_secret = os.environ[access_token_secret]
-        self.consumer_key = os.environ[consumer_key]
-        self.consumer_secret = os.environ[consumer_secret]
+    def __init__(self, access_token, access_token_secret, consumer_key, consumer_secret):
+        self.access_token = access_token
+        self.access_token_secret = access_token_secret
+        self.consumer_key = consumer_key
+        self.consumer_secret = consumer_secret
 
-    def publishTweet(self, content, ssm_tag_val):
+    def publishTweet(self, content):
         t_auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
         t_auth.set_access_token(self.access_token, self.access_token_secret)
         api = tweepy.API(t_auth)
@@ -141,7 +141,7 @@ class Tweet():
         ])
         return status
 
-def run(event="", context="", publish=False):
+def run(event="", context="", publish=True):
     """
     input event parameter of the backend Lambda function as follows:
     {
@@ -172,21 +172,21 @@ def run(event="", context="", publish=False):
     tweet = Tweet(SUBSIDY_ERA=SUBSIDY_ERA, SUBSIDY_AMOUNT=SUBSIDY_AMOUNT, BLOCKS_REMAINING=BLOCKS_REMAINING, PROGRESS_BAR=PROGRESS_BAR)
 
 
-    if prev_val < curr_val and publish == True:
+    if int(prev_val) < curr_val and publish == True:
         access_token = os.environ['twitter_access_token']
         access_token_secret = os.environ['twitter_access_token_secret']
         consumer_key = os.environ['twitter_consumer_key']
         consumer_secret = os.environ['twitter_consumer_secret']
         tweeter = Tweeter(access_token=access_token, access_token_secret=access_token_secret, consumer_key=consumer_key, consumer_secret=consumer_secret)
         message = tweet.compose()
-        tweeter.publishTweet(message)
-        body= { "message": message, "prev val": prev_val, "curr val": curr_val, "published": publish}
+        response = tweeter.publishTweet(message)
+        body= { "message": message, "prev val": prev_val, "curr val": curr_val, "published": publish, "twitter api response": response }
     else:
-        body = { "message": "", "prev val": prev_val, "curr val": curr_val, "published": publish }
+        body = { "message": "", "prev val": prev_val, "curr val": curr_val, "published": False }
     
     response = {
         "statusCode": 200,
-        "body": json.dumps(body)
+        "body": body
     }
 
     print(body)
