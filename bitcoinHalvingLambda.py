@@ -5,11 +5,8 @@ import math
 import requests
 import tweepy
 
-# AWS SSM
-client = boto3.client('ssm')
-
 # BTC defined constant: n blocks bewteen halving events
-N_BLOCKS_TO_HALVE = 210000
+HALVING_INTERVAL = 210000
 
 # For now, depend on blockchain.info for getting latest block height
 GET_BLOCK_HEIGHT = "https://blockchain.info/q/getblockcount"
@@ -20,16 +17,17 @@ INIT_MINING_SUBSIDY = 50
 class SSM():
     def __init__(self, ssm_path):
         self.ssm_path = ssm_path
+        self.client = boto3.client('ssm')
     
     def check_ssm_value(self):
-        ssm_response = client.get_parameter(
+        ssm_response = self.client.get_parameter(
             Name=self.ssm_path,
             WithDecryption=False
         )
         return ssm_response['Parameter']['Value']
 
     def update_ssm_value(self, value):
-        ssm_response = client.put_parameter(
+        self.client.put_parameter(
             Name=self.ssm_path,
             Description='',
             Value=str(value),
@@ -61,49 +59,52 @@ class ProgressBar():
 
 
 def scale(val, val_min, val_max, scale_min, scale_max):
-    return scale_min + (scale_max - scale_min) * ( (val - val_min) / (val_max - val_min))
+    return scale_min + (scale_max - scale_min) * ((val - val_min) / (val_max - val_min))
 
 class SubsidyCalculator():
     """
     Calculate the subsidy reward, reward era, 
     percentage completed until next halving, and other stats
     given required constants and varaiables:
-        CURRENT_BLOCK_HEIGHT: the most recent height of the bitcoin blockchain
+        BLOCK_HEIGHT: the most recent height of the bitcoin blockchain
         INIT_MINING_SUBSIDY: the initial mining subsidy. In bitcoins case, it is 50
         HALVING_INTERVAL: number of blocks between subsidy halvings. bitcoin default is every 210,000 block
         COIN: the total number of coins in a unit of bitcoin. Default is 100,000,000
     """
-    def __init__(self, CURRENT_BLOCK_HEIGHT=0, INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, COIN=100000000):
+    def __init__(self, BLOCK_HEIGHT=0, INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, COIN=100000000):
         self.INIT_MINING_SUBSIDY = INIT_MINING_SUBSIDY * COIN
         self.HALVING_INTERVAL = HALVING_INTERVAL
-        self.CURRENT_BLOCK_HEIGHT = CURRENT_BLOCK_HEIGHT
+        self.BLOCK_HEIGHT = BLOCK_HEIGHT
         self.COIN = COIN
 
-    def subsidy_era(self):
-        return math.ceil((self.CURRENT_BLOCK_HEIGHT / self.HALVING_INTERVAL))
+    def halvings(self):
+        return int(self.BLOCK_HEIGHT / self.HALVING_INTERVAL)
 
     def blocks_remaining_until_next_halving(self):
-        return self.block_height_of_next_halving() - self.CURRENT_BLOCK_HEIGHT
+        return self.block_height_of_next_halving() - self.BLOCK_HEIGHT
 
     def block_height_of_next_halving(self):
-        era = self.subsidy_era() - 1
-        next_event_block_height = era * self.HALVING_INTERVAL + self.HALVING_INTERVAL
+        n_halvings = self.halvings() + 1
+        next_event_block_height = n_halvings * HALVING_INTERVAL
         return next_event_block_height
 
     def percent_complete(self):
         max = self.block_height_of_next_halving()
-        min = (self.subsidy_era() - 1) * self.HALVING_INTERVAL
-        return (self.CURRENT_BLOCK_HEIGHT - min) * 100 / (max - min) 
+        min = self.halvings() * self.HALVING_INTERVAL
+        return (self.BLOCK_HEIGHT - min) * 100 / (max - min) 
 
     def block_subsidy(self):
-        subsidy_era = self.subsidy_era()
+        n_halvings = self.halvings()
+        # Force block subsidy to zero when right shift is undefined.
+        if n_halvings >= 64:
+            return 0
         # use a bitwise right shift to halve the subsidy based on the era
-        subsidy = ( self.INIT_MINING_SUBSIDY >> subsidy_era - 1 ) / self.COIN
+        subsidy = ( self.INIT_MINING_SUBSIDY >> n_halvings )
         return subsidy
     
     def compose(self):
         data = {
-            'subsidy_era': self.subsidy_era(),
+            'halvings': self.halvings(),
             'subsidy_amount': self.block_subsidy(),
             'blocks_remaining': self.blocks_remaining_until_next_halving(),
             'percent_complete': self.percent_complete()
@@ -128,15 +129,15 @@ class Tweeter():
         return response
 
 class Tweet():
-    def __init__(self, SUBSIDY_ERA, SUBSIDY_AMOUNT, BLOCKS_REMAINING, PROGRESS_BAR):
-        self.SUBSIDY_ERA = SUBSIDY_ERA
+    def __init__(self, HALVINGS, SUBSIDY_AMOUNT, BLOCKS_REMAINING, PROGRESS_BAR):
+        self.HALVINGS = HALVINGS
         self.SUBSIDY_AMOUNT = SUBSIDY_AMOUNT
         self.BLOCKS_REMAINING = BLOCKS_REMAINING
         self.PROGRESS_BAR = PROGRESS_BAR
 
     def compose(self):
         status = "".join([
-            'Subsidy Era: ', str(self.SUBSIDY_ERA), '/33\n',
+            'Halvenings: ', str(self.HALVINGS), '/33\n',
             'Block Subsidy: ₿', str(self.SUBSIDY_AMOUNT), '\n',
             'Blocks Remaining: ', str(self.BLOCKS_REMAINING), '\n',
             self.PROGRESS_BAR
