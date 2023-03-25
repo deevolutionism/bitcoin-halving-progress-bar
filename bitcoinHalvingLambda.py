@@ -84,14 +84,16 @@ class SubsidyCalculator():
         return self.block_height_of_next_halving() - self.BLOCK_HEIGHT
 
     def block_height_of_next_halving(self):
-        n_halvings = self.halvings() + 1
-        next_event_block_height = n_halvings * HALVING_INTERVAL
+        n_halvings = self.halvings()
+        next_event_block_height = (n_halvings * HALVING_INTERVAL) + HALVING_INTERVAL
         return next_event_block_height
 
     def percent_complete(self):
         max = self.block_height_of_next_halving()
-        min = self.halvings() * self.HALVING_INTERVAL
-        return (self.BLOCK_HEIGHT - min) * 100 / (max - min) 
+        min = (self.halvings() * self.HALVING_INTERVAL)
+        if self.BLOCK_HEIGHT - min == 0:
+            return 100.0 
+        return (self.BLOCK_HEIGHT - min) * 100 / (max - min)
 
     def block_subsidy(self):
         n_halvings = self.halvings()
@@ -138,7 +140,7 @@ class Tweet():
     def compose(self):
         status = "".join([
             'Halvenings: ', str(self.HALVINGS), '/33\n',
-            'Block Subsidy: ₿', str(self.SUBSIDY_AMOUNT), '\n',
+            'Block Subsidy: ₿', str(self.SUBSIDY_AMOUNT / 100000000), '\n',
             'Blocks Remaining: ', str(self.BLOCKS_REMAINING), '\n',
             self.PROGRESS_BAR
         ])
