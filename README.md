@@ -47,7 +47,7 @@ start the python virtual environment
 
 ### OSX
 ```
-source ./bin/activate
+source ./env/activate
 ```
 set environemnt variables for twitter api access
 
@@ -62,7 +62,13 @@ env\Scripts\activate.bat
 using unittest you can run a test on the subsidy calculator
 
 ```
-python -m unittest test_BitcoinHalvingLambda.py
+python -m unittest test_bitcoinHalvingLambda
+```
+
+to test a single unit test:
+
+```
+python -m unittest test_bitcoinHalvingLambda.TestTweet.test_tweet_message
 ```
 ### Testing twitter post
 You will need a twitter account and api access.

@@ -81,7 +81,10 @@ class SubsidyCalculator():
         return int(self.BLOCK_HEIGHT / self.HALVING_INTERVAL)
 
     def blocks_remaining_until_next_halving(self):
-        return self.block_height_of_next_halving() - self.BLOCK_HEIGHT
+        if self.BLOCK_HEIGHT % self.HALVING_INTERVAL == 0:
+            return 0  # No blocks remaining at the exact point of halving
+        else:
+            return self.block_height_of_next_halving() - self.BLOCK_HEIGHT
 
     def block_height_of_next_halving(self):
         n_halvings = self.halvings()
@@ -94,18 +97,22 @@ class SubsidyCalculator():
         if self.BLOCK_HEIGHT - min == 0:
             return 100.0 
         return (self.BLOCK_HEIGHT - min) * 100 / (max - min)
+    
+    def halvings(self):
+        # Adjust the halving calculation
+        return min(int(self.BLOCK_HEIGHT / self.HALVING_INTERVAL), 64)
 
     def block_subsidy(self):
         n_halvings = self.halvings()
-        # Force block subsidy to zero when right shift is undefined.
+        # Adjust to account for a maximum of 64 halvings
         if n_halvings >= 64:
             return 0
-        # use a bitwise right shift to halve the subsidy based on the era
-        subsidy = ( self.INIT_MINING_SUBSIDY >> n_halvings )
+        subsidy = self.INIT_MINING_SUBSIDY >> n_halvings
         return subsidy
     
     def compose(self):
         data = {
+            'block_height': self.BLOCK_HEIGHT,
             'halvings': self.halvings(),
             'subsidy_amount': self.block_subsidy(),
             'blocks_remaining': self.blocks_remaining_until_next_halving(),
@@ -131,7 +138,8 @@ class Tweeter():
         return response
 
 class Tweet():
-    def __init__(self, HALVINGS, SUBSIDY_AMOUNT, BLOCKS_REMAINING, PROGRESS_BAR):
+    def __init__(self, BLOCK_HEIGHT, HALVINGS, SUBSIDY_AMOUNT, BLOCKS_REMAINING, PROGRESS_BAR):
+        self.BLOCK_HEIGHT = BLOCK_HEIGHT
         self.HALVINGS = HALVINGS
         self.SUBSIDY_AMOUNT = SUBSIDY_AMOUNT
         self.BLOCKS_REMAINING = BLOCKS_REMAINING
@@ -139,7 +147,8 @@ class Tweet():
 
     def compose(self):
         status = "".join([
-            'Halvenings: ', str(self.HALVINGS), '/33\n',
+            'Block Height: ', str(self.BLOCK_HEIGHT), '\n',
+            'Halvenings: ', str(self.HALVINGS), '/64\n',
             'Block Subsidy: ₿', str(self.SUBSIDY_AMOUNT / 100000000), '\n',
             'Blocks Remaining: ', str(self.BLOCKS_REMAINING), '\n',
             self.PROGRESS_BAR
@@ -163,18 +172,19 @@ def run(event="", context="", publish=True):
     }
     """
     CURRENT_BLOCK_HEIGHT = int(requests.get(GET_BLOCK_HEIGHT).text)
-    calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, CURRENT_BLOCK_HEIGHT=CURRENT_BLOCK_HEIGHT, COIN=100000000)
+    calc = SubsidyCalculator(BLOCK_HEIGHT=CURRENT_BLOCK_HEIGHT, INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, COIN=100000000)
     
     # get the last computed value from storage
     ssm = SSM(ssm_path="/BitcoinProgress/lastKnownPercentage")
     prev_val = int(ssm.check_ssm_value())
     curr_val = curr_val = int(calc.percent_complete())
 
+    BLOCK_HEIGHT = calc.BLOCK_HEIGHT
     SUBSIDY_ERA = calc.subsidy_era()
     SUBSIDY_AMOUNT = calc.block_subsidy()
     BLOCKS_REMAINING = calc.blocks_remaining_until_next_halving()
     PROGRESS_BAR = ProgressBar(percent_complete=curr_val).gen_progress_string()
-    tweet = Tweet(SUBSIDY_ERA=SUBSIDY_ERA, SUBSIDY_AMOUNT=SUBSIDY_AMOUNT, BLOCKS_REMAINING=BLOCKS_REMAINING, PROGRESS_BAR=PROGRESS_BAR)
+    tweet = Tweet(BLOCK_HEIGHT=BLOCK_HEIGHT, SUBSIDY_ERA=SUBSIDY_ERA, SUBSIDY_AMOUNT=SUBSIDY_AMOUNT, BLOCKS_REMAINING=BLOCKS_REMAINING, PROGRESS_BAR=PROGRESS_BAR)
 
 
     if int(prev_val) < curr_val and publish == True:

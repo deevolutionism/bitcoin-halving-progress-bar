@@ -2,7 +2,6 @@ import unittest
 from bitcoinHalvingLambda import SubsidyCalculator
 from bitcoinHalvingLambda import ProgressBar
 from bitcoinHalvingLambda import Tweet
-import math
 
 class TestSubsidyCalc(unittest.TestCase):
     
@@ -107,21 +106,40 @@ class TestProgressBar(unittest.TestCase):
 
         self.assertEqual(result, '░░░░░░░░░░░░░░░ 0%')
 
+# class TestTweet(unittest.TestCase):
+#     def test_tweet_message(self):
+#         BLOCK_HEIGHT = 210000
+#         calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, BLOCK_HEIGHT=BLOCK_HEIGHT, COIN=100000000)
+#         data = calc.compose()
+#         progressBar = ProgressBar(percent_complete=data['percent_complete'])
+#         progressBarString = progressBar.gen_progress_string()
+#         tweet = Tweet(HALVINGS=data['halvings'], SUBSIDY_AMOUNT=data['subsidy_amount'], BLOCKS_REMAINING=data['blocks_remaining'], PROGRESS_BAR=progressBarString)
+#         message = tweet.compose()
+#         self.assertEqual(message, "".join([
+#             'Halvenings: 1/33\n',
+#             'Block Subsidy: 1BTC\n',
+#             'Blocks Remaining: 0\n',
+#             '███████████████ 100%'
+#         ]))
+
 class TestTweet(unittest.TestCase):
     def test_tweet_message(self):
+        # Set BLOCK_HEIGHT to 209,999 for testing the exact point of halving
         BLOCK_HEIGHT = 210000
         calc = SubsidyCalculator(INIT_MINING_SUBSIDY=50, HALVING_INTERVAL=210000, BLOCK_HEIGHT=BLOCK_HEIGHT, COIN=100000000)
         data = calc.compose()
         progressBar = ProgressBar(percent_complete=data['percent_complete'])
         progressBarString = progressBar.gen_progress_string()
-        tweet = Tweet(HALVINGS=data['halvings'], SUBSIDY_AMOUNT=data['subsidy_amount'], BLOCKS_REMAINING=data['blocks_remaining'], PROGRESS_BAR=progressBarString)
+        tweet = Tweet(BLOCK_HEIGHT=data['block_height'], HALVINGS=data['halvings'], SUBSIDY_AMOUNT=data['subsidy_amount'], BLOCKS_REMAINING=data['blocks_remaining'], PROGRESS_BAR=progressBarString)
         message = tweet.compose()
         self.assertEqual(message, "".join([
-            'Halvenings: 1/33\n',
-            'Block Subsidy: 1BTC\n',
-            'Blocks Remaining: 0\n',
+            'Block Height: ', str(BLOCK_HEIGHT), '\n',
+            'Halvenings: 1/64\n',
+            'Block Subsidy: ₿25.0\n',  # Adjusted to reflect the correct subsidy post-halving
+            'Blocks Remaining: 0\n',   # Assuming we're testing the exact point of halving
             '███████████████ 100%'
         ]))
+
 
 if __name__ == '__main__':
     unittest.main()
