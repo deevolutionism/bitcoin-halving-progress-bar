@@ -129,13 +129,16 @@ class Tweeter():
         self.consumer_secret = consumer_secret
 
     def publishTweet(self, content):
+      try:
         t_auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
         t_auth.set_access_token(self.access_token, self.access_token_secret)
-        api = tweepy.API(t_auth)
+        api = tweepy.API(t_auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
         response = api.update_status(content)
-
-        print(response)
-        return response
+        print(f"Tweeted: {content}")
+        return {"status": "success", "response": str(response)}
+      except tweepy.TweepyException as e:
+        print(f"Error: {e}")
+        return {"status": "error", "message": str(e)}
 
 class Tweet():
     def __init__(self, BLOCK_HEIGHT, HALVINGS, SUBSIDY_AMOUNT, BLOCKS_REMAINING, PROGRESS_BAR):

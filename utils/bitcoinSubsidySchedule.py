@@ -9,7 +9,7 @@ def subsidySchedule(supply=0, HALVING_INTERVAL=210000, init_subsidy=50, coin=100
         filewriter.writerow(head)
         init_subsidy_total = init_subsidy * coin
         subsidy = init_subsidy_total
-        for i in range(1,34):
+        for i in range(1,64):
             supply = supply + subsidy * HALVING_INTERVAL
             row = [str(HALVING_INTERVAL * i), str(i), str(subsidy), str(supply)]
             print(row)
