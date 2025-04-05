@@ -1,1 +1,0 @@
-aws lambda create-function --function-name bitcoinProgress --runtime python37 --role --handler
